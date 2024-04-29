@@ -40,7 +40,7 @@ void emxEnsureCapacity_char_T(emxArray_char_T *emxArray, int oldNumel)
     }
     while (i < newNumel) {
       if (i > 1073741823) {
-        i = MAX_int32_T;
+        i = 1073741823;
       } else {
         i *= 2;
       }
@@ -82,7 +82,7 @@ void emxEnsureCapacity_real32_T(emxArray_real32_T *emxArray, int oldNumel)
     }
     while (i < newNumel) {
       if (i > 1073741823) {
-        i = MAX_int32_T;
+        i = 1073741823;
       } else {
         i *= 2;
       }
@@ -124,7 +124,7 @@ void emxEnsureCapacity_real_T(emxArray_real_T *emxArray, int oldNumel)
     }
     while (i < newNumel) {
       if (i > 1073741823) {
-        i = MAX_int32_T;
+        i = 1073741823;
       } else {
         i *= 2;
       }
