@@ -14,6 +14,7 @@
 /* Include Files */
 #include "rtwtypes.h"
 #include <stdbool.h>
+
 /* Type Definitions */
 #ifndef struct_emxArray_real_T
 #define struct_emxArray_real_T
@@ -52,6 +53,13 @@ typedef struct {
   emxArray_real32_T *marker_location;
   emxArray_real_T *R_b2e;
 } struct0_T;
+
+typedef struct {
+    double pe[200][3];
+    double marker_location[200][3];
+    double R_b2e[200][9];
+} Result;
+
 #endif /* typedef_struct0_T */
 
 #ifndef struct_emxArray_char_T

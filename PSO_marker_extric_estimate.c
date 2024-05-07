@@ -69,6 +69,7 @@ void PSO_marker_extric_estimate(const struct0_T *fit_data,
   /*  [bestPosition, bestValue, error_data] = PSO(@compute_fit_error_pso,
    * fit_data, error_data, dim, swarmSize, maxIterations, lb, ub); */
   /*  初始化粒子群 */
+  printf("STEP5:\n");
   b_rand(swarm);
   for (i = 0; i < 2; i++) {
     for (i1 = 0; i1 <= 18; i1 += 2) {
