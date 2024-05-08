@@ -13,10 +13,11 @@
 #include "PSO_marker_extric_estimate_emxutil.h"
 #include "PSO_marker_extric_estimate_types.h"
 #include "rt_nonfinite.h"
-#include "rt_nonfinite.h"
 #include <emmintrin.h>
 #include <math.h>
 #include <xmmintrin.h>
+
+#define M_PI 3.14159265358979323846
 
 /* Function Declarations */
 static void binary_expand_op(emxArray_real_T *in1, const emxArray_real_T *in2,
@@ -154,7 +155,13 @@ double compute_fit_error_pso(const double params[2],
   emxArray_real_T *x;
   emxArray_real_T *xv;
   double a[9];
+  double R_c2b0[3][3];
+  double R_c2b_compens[3][3];
   double eulerCompens_xyz[3];
+  double markerxyz_imu[3];
+  double markerxyz_ned[3];
+  double markerxyz_imu_list[fit_data_marker_location->size[0]][3];
+  double markerxyz_ned_list[fit_data_marker_location->size[0]][3];
   const double *fit_data_R_b2e_data;
   const double *fit_data_pe_data;
   double ct_idx_0;
@@ -182,16 +189,77 @@ double compute_fit_error_pso(const double params[2],
   fit_data_R_b2e_data = fit_data_R_b2e->data;
   fit_data_marker_location_data = fit_data_marker_location->data;
   fit_data_pe_data = fit_data_pe->data;
-  /*  单位：deg */
+
   /*  计算当前roll、pitch值的marker location测量值 */
-  /*  绕 X 轴的旋转角度    --PH5 */
-  /*  绕 Y 轴的旋转角度 */
-  /*  绕 Z 轴的旋转角度 */
+  double roll_init = M_PI;    // 绕 X 轴的旋转角度    --PH5
+  double pitch_init = 0;      // 绕 Y 轴的旋转角度
+  double yaw_init = M_PI / 2; // 绕 Z 轴的旋转角度
+  double eulerAngles0[3] = {roll_init, pitch_init, yaw_init};
+  euler2rotm(eulerAngles0, R_c2b0);
+  R_c2b0[0][0] = 0;
+  R_c2b0[0][1] = 1;
+  R_c2b0[0][2] = 0;
+
+  R_c2b0[1][0] = 1;
+  R_c2b0[1][1] = 0;
+  R_c2b0[1][2] = 0;
+
+  R_c2b0[2][0] = 0;
+  R_c2b0[2][1] = 0;
+  R_c2b0[2][2] = -1;
+
+  // debug
+  // printf("STEP7:R_c2b0[0][0]= %f, [0][1]= %f, [0][2]= %f\n",
+  // R_c2b0[0][0],R_c2b0[0][1], R_c2b0[0][2]); printf("STEP7:R_c2b0[1][0]= %f,
+  // [1][1]= %f, [1][2]= %f\n", R_c2b0[1][0], R_c2b0[1][1], R_c2b0[1][2]);
+  // printf("STEP7:R_c2b0[2][0]= %f, [2][1]= %f, [2][2]= %f\n", R_c2b0[2][0],
+  // R_c2b0[2][1], R_c2b0[2][2]);
+
   /*  组合欧拉角向量 */
-  eulerCompens_xyz[0] = params[0] / 57.3;
-  eulerCompens_xyz[1] = params[1] / 57.3;
+  eulerCompens_xyz[0] = params[0] / 57.3; // [roll, pitch, yaw]
+  eulerCompens_xyz[1] = params[1] / 57.3; /*  单位：deg to rad */
+  eulerCompens_xyz[2] = 0;
+  euler2rotm(eulerCompens_xyz, R_c2b_compens);
+
+  // debug
+  // printf("STEP6:params[0]= %f, params[1]= %f\n", params[0], params[1]);
+
+  // printf("STEP7:R_c2b_compens[0][0]= %f, [0][1]= %f, [0][2]= %f\n",
+  //        R_c2b_compens[0][0], R_c2b_compens[0][1], R_c2b_compens[0][2]);
+  // printf("STEP7:R_c2b_compens[1][0]= %f, [1][1]= %f, [1][2]= %f\n",
+  //        R_c2b_compens[1][0], R_c2b_compens[1][1], R_c2b_compens[1][2]);
+  // printf("STEP7:R_c2b_compens[2][0]= %f, [2][1]= %f, [2][2]= %f\n",
+  //        R_c2b_compens[2][0], R_c2b_compens[2][1], R_c2b_compens[2][2]);
+  
+  double t_c2b[3] = {-0.108, 0.033, 0.038}; // --PH5
+
+  // fit_data_marker_location_data
+  for (int i = 0; i < fit_data_marker_location->size[0]; i++) {
+    markerxyz_imu[0] =
+        R_c2b_compens[0][1] * fit_data_marker_location_data[i * 3 + 0] +
+        R_c2b_compens[0][0] * fit_data_marker_location_data[i * 3 + 1] -
+        R_c2b_compens[0][2] * fit_data_marker_location_data[i * 3 + 2] +
+        t_c2b[1];
+    markerxyz_imu[1] =
+        R_c2b_compens[1][1] * fit_data_marker_location_data[i * 3 + 0] +
+        R_c2b_compens[1][0] * fit_data_marker_location_data[i * 3 + 1] -
+        R_c2b_compens[1][2] * fit_data_marker_location_data[i * 3 + 2] +
+        t_c2b[2];
+    markerxyz_imu[2] =
+        R_c2b_compens[2][1] * fit_data_marker_location_data[i * 3 + 0] +
+        R_c2b_compens[2][0] * fit_data_marker_location_data[i * 3 + 1] -
+        R_c2b_compens[2][2] * fit_data_marker_location_data[i * 3 + 2] +
+        t_c2b[3];
+    for (int j = 0; j < 3; j++) {
+      markerxyz_imu_list[i][j] = markerxyz_imu[j];
+    }
+    // debug
+    // printf("STEP7:markerxyz_imu_list[%d][:]: [%f,%f,%f]\n", i,
+    //  markerxyz_imu_list[i][0], markerxyz_imu_list[i][1],
+    //  markerxyz_imu_list[i][2]);
+  }
+
   /*  将欧拉角转换为旋转矩阵 */
-  /* --PH5 */
   ct_idx_0 = cos(eulerCompens_xyz[0]);
   eulerCompens_xyz[0] = sin(eulerCompens_xyz[0]);
   ct_idx_1 = cos(eulerCompens_xyz[1]);
@@ -305,6 +373,104 @@ double compute_fit_error_pso(const double params[2],
               marker_xyz_imu_data[xpageoffset + marker_xyz_imu->size[0] * 2];
     }
   }
+  //
+  for (int i = 0; i < fit_data_marker_location->size[0]; i++) {
+    double markerxyz_imu_tmp[3];
+    markerxyz_imu_tmp[0] = markerxyz_imu_list[i][0];
+    markerxyz_imu_tmp[1] = markerxyz_imu_list[i][1];
+    markerxyz_imu_tmp[2] = markerxyz_imu_list[i][2];
+
+    markerxyz_ned[0] =
+        fit_data_R_b2e_data[i * 9 + 0 * 3 + 0] * markerxyz_imu_tmp[0] +
+        fit_data_R_b2e_data[i * 9 + 0 * 3 + 1] * markerxyz_imu_tmp[1] +
+        fit_data_R_b2e_data[i * 9 + 0 * 3 + 2] * markerxyz_imu_tmp[2];
+    markerxyz_ned[1] =
+        fit_data_R_b2e_data[i * 9 + 1 * 3 + 0] * markerxyz_imu_tmp[0] +
+        fit_data_R_b2e_data[i * 9 + 1 * 3 + 1] * markerxyz_imu_tmp[1] +
+        fit_data_R_b2e_data[i * 9 + 1 * 3 + 2] * markerxyz_imu_tmp[2];
+    markerxyz_ned[2] =
+        fit_data_R_b2e_data[i * 9 + 2 * 3 + 0] * markerxyz_imu_tmp[0] +
+        fit_data_R_b2e_data[i * 9 + 2 * 3 + 1] * markerxyz_imu_tmp[1] +
+        fit_data_R_b2e_data[i * 9 + 2 * 3 + 2] * markerxyz_imu_tmp[2];
+    for (int j = 0; j < 3; j++) {
+      markerxyz_ned_list[i][j] = markerxyz_ned[j];
+    }
+    // debug
+    // printf("STEP7:markerxyz_ned_list[%d][:]: [%f,%f,%f]\n", i,
+    //  markerxyz_ned_list[i][0], markerxyz_ned_list[i][1],
+    //  markerxyz_ned_list[i][2]);
+  }
+  /*  计算拟合误差和 */
+  double mean_fit_error[3];
+  double fit_error_trans[fit_data_pe->size[0]][2]; // 取xy二维误差
+  mean_fit_error[0] = 0.0;
+  mean_fit_error[1] = 0.0;
+  mean_fit_error[2] = 0.0;
+  fit_error = 0.0;
+
+  if (fit_data_pe->size[0] == fit_data_marker_location->size[0]) {
+    for (int i = 0; i < fit_data_pe->size[0] * fit_data_pe->size[1]; i++) {
+      int idx0 = i / 3; // 商
+      int idx1 = i % 3; // 余数
+      mean_fit_error[idx1] +=
+          (fit_data_pe->data[i] - markerxyz_ned_list[idx0][idx1]);
+
+      // debug
+      // printf("STEP8: fit_data_pe->data[%d]= %f, markerxyz_ned_list[%d][%d] =
+      // %f \n", i, fit_data_pe->data[i], idx0, idx1,
+      // markerxyz_ned_list[idx0][idx1]);
+    }
+    mean_fit_error[0] /= fit_data_pe->size[0];
+    mean_fit_error[1] /= fit_data_pe->size[0];
+    mean_fit_error[2] /= fit_data_pe->size[0];
+
+    // debug
+    //  printf("STEP9: mean_fit_error:[%f,%f,%f]\n",
+    //  mean_fit_error[0],mean_fit_error[1],mean_fit_error[2]);
+
+    for (size_t i = 0; i < fit_data_pe->size[0] * fit_data_pe->size[1]; i++) {
+      int idx0 = i / 3; // 商
+      int idx1 = i % 3; // 余数
+      if (idx1 == 2) {  // 剔除第3维数据
+        continue;
+      } else {
+        fit_error_trans[idx0][idx1] =
+            fit_data_pe->data[i] -
+            (markerxyz_ned_list[idx0][idx1] + mean_fit_error[idx1]);
+        // debug
+        // printf("STEP10: fit_error_trans[%d][%d]: %f,%f \n", idx0, idx1,
+        // fit_error_trans[idx0][0], fit_error_trans[idx0][1]); fit_error +=
+        // sqrt(fit_error_trans[idx0][0] * fit_error_trans[idx0][0] +
+        //                       fit_error_trans[idx0][1] *
+        //                       fit_error_trans[idx0][1]);
+      }
+    }
+    // 计算fit_error_trans各列std
+    double std_dev[2];
+    double fit_error_std_mod = 0.0;
+
+    for (int j = 0; j < 2; j++) {
+      double list_sum = 0;
+      for (int i = 0; i < fit_data_pe->size[0]; i++) { // 列和
+        list_sum += fit_error_trans[i][j];
+      }
+      double list_mean = list_sum / fit_data_pe->size[0]; // 列均值
+      double squar_diff_sum = 0.0;
+      for (int i = 0; i < fit_data_pe->size[0]; i++) {
+        double list_diff = fit_error_trans[i][j] - list_mean;
+        squar_diff_sum += list_diff * list_diff; // 列方差
+      }
+      std_dev[j] = sqrt(squar_diff_sum / fit_data_pe->size[0]); // 列标准差
+      fit_error_std_mod += std_dev[j] * std_dev[j];
+    }
+    fit_error_std_mod = sqrt(fit_error_std_mod); // 标准差模值
+    fit_error = fit_error_std_mod;
+
+    // debug
+    // printf("STEP10: std_dev: [%f,%f]\n", std_dev[0], std_dev[1]);
+    // printf("STEP11: fit_error_std_mod [%f]\n", fit_error_std_mod);
+  }
+  return fit_error;
   emxFree_real32_T(&marker_xyz_imu);
   /*  计算拟合误差和 */
   emxInit_real_T(&x, 2);
@@ -510,6 +676,32 @@ double compute_fit_error_pso(const double params[2],
    * ','res:',num2str(fit_error))); */
 }
 
+// 按ZYX顺序，欧拉角转为旋转矩阵
+void euler2rotm(double eulerAngles[3], double R[3][3])
+{
+  double a = eulerAngles[0];
+  double b = eulerAngles[1];
+  double c = eulerAngles[2];
+
+  double cos_a = cos(a);
+  double sin_a = sin(a);
+  double cos_b = cos(b);
+  double sin_b = sin(b);
+  double cos_c = cos(c);
+  double sin_c = sin(c);
+
+  R[0][0] = cos_b * cos_c;
+  R[0][1] = -cos_b * sin_c;
+  R[0][2] = sin_b;
+
+  R[1][0] = sin_a * sin_b * cos_c + cos_a * sin_c;
+  R[1][1] = -sin_a * sin_b * sin_c + cos_a * cos_c;
+  R[1][2] = -sin_a * cos_b;
+
+  R[2][0] = -cos_a * sin_b * cos_c + sin_a * sin_c;
+  R[2][1] = cos_a * sin_b * sin_c + sin_a * cos_c;
+  R[2][2] = cos_a * cos_b;
+}
 /*
  * File trailer for compute_fit_error_pso.c
  *

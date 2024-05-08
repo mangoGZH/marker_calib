@@ -14,6 +14,7 @@
 /* Include Files */
 #include "rtwtypes.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 /* Type Definitions */
 #ifndef struct_emxArray_real_T

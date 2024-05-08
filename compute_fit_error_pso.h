@@ -27,6 +27,7 @@ double compute_fit_error_pso(const double params[2],
                              const emxArray_real32_T *fit_data_marker_location,
                              const emxArray_real_T *fit_data_R_b2e);
 
+void euler2rotm(double eulerAngles[3], double R[3][3]);
 #ifdef __cplusplus
 }
 #endif

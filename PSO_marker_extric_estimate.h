@@ -16,6 +16,7 @@
 #include "rtwtypes.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +26,9 @@ extern "C" {
 extern void PSO_marker_extric_estimate(const struct0_T *fit_data,
                                        double bestPosition[2],
                                        double *bestValue);
+extern void PSO_marker_extric_estimate_handle(const struct0_T *fit_data,
+                                        double bestPosition[2], 
+                                        double *bestValue);
 
 #ifdef __cplusplus
 }

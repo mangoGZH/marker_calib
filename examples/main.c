@@ -199,36 +199,39 @@ static struct0_T argInit_struct0_T(void)
 
       if (column_count < 3) {
         result.pe->data[column_count + row_count * 3] = cur_value;                    // 按行排列
-        printf("STEP2: %.6f\n", result.pe->data[column_count + row_count * 3]);
+        // printf("STEP2: %.6f\n", result.pe->data[column_count + row_count * 3]);
 
       } else if (column_count < 6) {
         result.marker_location->data[column_count - 3 + row_count * 3] =  cur_value;  // 按行排列
-        printf("STEP3: %.6f\n", result.marker_location->data[column_count - 3 + row_count * 3]);
+        // printf("STEP3: %.6f\n", result.marker_location->data[column_count - 3 + row_count * 3]);
 
       } else {
         int idx0 = (column_count - 6) / 3;  // 商
         int idx1 = (column_count - 6) % 3;  // 余数
         result.R_b2e->data[(idx1 + 3 * idx0) + 9 * row_count] = cur_value;
-        printf("STEP4: %.6f\n", result.R_b2e->data[(idx1 + 3 * idx0) + 9 * row_count]);
+        // printf("STEP4: %.6f\n", result.R_b2e->data[(idx1 + 3 * idx0) + 9 * row_count]);
       }
 
       token = strtok(NULL, ",");
       column_count++;
-      printf("col: %d\n", column_count);
+      // printf("col: %d\n", column_count);
     }
     row_count++;
     printf("row: %d\n", row_count);
+    result.pe->size[0] = row_count;
+    result.marker_location->size[0] = row_count;
+    result.R_b2e->size[0] = row_count;
   }
 
   fclose(file);
 
   // 遍历数据并输出
-  for (int i = 0; i < row_count; i++) {
-    for (int j = 0; j < NUM_COLUMNS; j++) {
-      printf("%.6f ", data[i][j]);
-    }
-    printf("\n");
-  }
+  // for (int i = 0; i < row_count; i++) {
+  //   for (int j = 0; j < NUM_COLUMNS; j++) {
+  //     printf("%.6f ", data[i][j]);
+  //   }
+  //   printf("\n");
+  // }
 
   // printf(result);
   return result;
@@ -343,7 +346,13 @@ void main_PSO_marker_extric_estimate(void)
   /* Initialize function input argument 'fit_data'. */
   fit_data = argInit_struct0_T(); // fit_data = argInit_Result();
   /* Call the entry-point 'PSO_marker_extric_estimate'. */
-  PSO_marker_extric_estimate(&fit_data, bestPosition, &bestValue);
+  // PSO_marker_extric_estimate(&fit_data, bestPosition, &bestValue);
+  PSO_marker_extric_estimate_handle(&fit_data, bestPosition, &bestValue);
+
+  /*  打印最优结果 */
+  printf("STEP7:bestPosition[0]= %f\n", bestPosition[0]);
+  printf("STEP7:bestPosition[1]= %f\n", bestPosition[1]);
+  printf("STEP7:best_fit_error = %f\n", bestValue);
   emxDestroy_struct0_T(fit_data);
 }
 
