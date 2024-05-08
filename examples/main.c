@@ -176,7 +176,7 @@ static struct0_T argInit_struct0_T(void)
 
   // 导入txt文件数据
   FILE *file;
-  file = fopen("..\\datasets\\fit_data.txt", "r");
+  file = fopen("..\\datasets\\fit_data4.txt", "r");
   printf("STEP 1: load txt ...\n");
   if (file == NULL) {
     printf("Error opening file\n");
@@ -217,12 +217,12 @@ static struct0_T argInit_struct0_T(void)
       // printf("col: %d\n", column_count);
     }
     row_count++;
-    printf("row: %d\n", row_count);
+    
     result.pe->size[0] = row_count;
     result.marker_location->size[0] = row_count;
     result.R_b2e->size[0] = row_count;
   }
-
+  printf("STEP 2: data size[%d][%d]\n", result.pe->size[0], result.pe->size[1]);
   fclose(file);
 
   // 遍历数据并输出
