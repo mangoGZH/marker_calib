@@ -5,7 +5,7 @@
  * File: PSO_marker_extric_estimate_types.h
  *
  * MATLAB Coder version            : 24.1
- * C/C++ source code generated on  : 2024-04-29 11:40:58
+ * C/C++ source code generated on  : 2024-05-13 17:23:46
  */
 
 #ifndef PSO_MARKER_EXTRIC_ESTIMATE_TYPES_H
@@ -13,8 +13,6 @@
 
 /* Include Files */
 #include "rtwtypes.h"
-#include <stdbool.h>
-#include <stdio.h>
 
 /* Type Definitions */
 #ifndef struct_emxArray_real_T
@@ -24,7 +22,7 @@ struct emxArray_real_T {
   int *size;
   int allocatedSize;
   int numDimensions;
-  boolean_T canFreeData;
+  bool canFreeData;
 };
 #endif /* struct_emxArray_real_T */
 #ifndef typedef_emxArray_real_T
@@ -39,7 +37,7 @@ struct emxArray_real32_T {
   int *size;
   int allocatedSize;
   int numDimensions;
-  boolean_T canFreeData;
+  bool canFreeData;
 };
 #endif /* struct_emxArray_real32_T */
 #ifndef typedef_emxArray_real32_T
@@ -54,13 +52,6 @@ typedef struct {
   emxArray_real32_T *marker_location;
   emxArray_real_T *R_b2e;
 } struct0_T;
-
-typedef struct {
-    double pe[200][3];
-    double marker_location[200][3];
-    double R_b2e[200][9];
-} Result;
-
 #endif /* typedef_struct0_T */
 
 #ifndef struct_emxArray_char_T
@@ -70,13 +61,13 @@ struct emxArray_char_T {
   int *size;
   int allocatedSize;
   int numDimensions;
-  boolean_T canFreeData;
+  bool canFreeData;
 };
 #endif /* struct_emxArray_char_T */
- #ifndef typedef_emxArray_char_T
- #define typedef_emxArray_char_T
- typedef struct emxArray_char_T emxArray_char_T;
- #endif /* typedef_emxArray_char_T */
+#ifndef typedef_emxArray_char_T
+#define typedef_emxArray_char_T
+typedef struct emxArray_char_T emxArray_char_T;
+#endif /* typedef_emxArray_char_T */
 
 #endif
 /*

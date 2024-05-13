@@ -5,7 +5,7 @@
  * File: PSO_marker_extric_estimate.h
  *
  * MATLAB Coder version            : 24.1
- * C/C++ source code generated on  : 2024-04-29 11:40:58
+ * C/C++ source code generated on  : 2024-05-13 17:23:46
  */
 
 #ifndef PSO_MARKER_EXTRIC_ESTIMATE_H
@@ -16,7 +16,6 @@
 #include "rtwtypes.h"
 #include <stddef.h>
 #include <stdlib.h>
-#include <math.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,9 +25,6 @@ extern "C" {
 extern void PSO_marker_extric_estimate(const struct0_T *fit_data,
                                        double bestPosition[2],
                                        double *bestValue);
-extern void PSO_marker_extric_estimate_handle(const struct0_T *fit_data,
-                                        double bestPosition[2], 
-                                        double *bestValue);
 
 #ifdef __cplusplus
 }

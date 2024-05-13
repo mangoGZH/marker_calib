@@ -2,7 +2,7 @@
 ## Makefile generated for component 'PSO_marker_extric_estimate'. 
 ## 
 ## Makefile     : PSO_marker_extric_estimate_rtw.mk
-## Generated on : Sun Apr 28 22:37:58 2024
+## Generated on : Mon May 13 16:47:00 2024
 ## Final product: ./PSO_marker_extric_estimate.lib
 ## Product type : static-library
 ## 
@@ -221,19 +221,17 @@ SYSTEM_LIBS =
 # C Compiler
 #---------------
 
-CFLAGS_TFL = -msse2 -fno-predictive-commoning
 CFLAGS_BASIC = $(DEFINES) $(INCLUDES) @$(COMPILER_COMMAND_FILE)
 
-CFLAGS += $(CFLAGS_TFL) $(CFLAGS_BASIC)
+CFLAGS += $(CFLAGS_BASIC)
 
 #-----------------
 # C++ Compiler
 #-----------------
 
-CPPFLAGS_TFL = -msse2 -fno-predictive-commoning
 CPPFLAGS_BASIC = $(DEFINES) $(INCLUDES) @$(COMPILER_COMMAND_FILE)
 
-CPPFLAGS += $(CPPFLAGS_TFL) $(CPPFLAGS_BASIC)
+CPPFLAGS += $(CPPFLAGS_BASIC)
 
 #---------------------
 # MEX C++ Compiler

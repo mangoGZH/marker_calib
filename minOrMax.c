@@ -5,7 +5,7 @@
  * File: minOrMax.c
  *
  * MATLAB Coder version            : 24.1
- * C/C++ source code generated on  : 2024-04-29 11:40:58
+ * C/C++ source code generated on  : 2024-05-13 17:23:46
  */
 
 /* Include Files */
@@ -26,7 +26,7 @@ double minimum(const double x[20], int *idx)
   if (!rtIsNaN(x[0])) {
     *idx = 1;
   } else {
-    boolean_T exitg1;
+    bool exitg1;
     *idx = 0;
     k = 2;
     exitg1 = false;

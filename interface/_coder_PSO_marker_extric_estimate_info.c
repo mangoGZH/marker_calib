@@ -5,7 +5,7 @@
  * File: _coder_PSO_marker_extric_estimate_info.c
  *
  * MATLAB Coder version            : 24.1
- * C/C++ source code generated on  : 2024-04-29 11:40:58
+ * C/C++ source code generated on  : 2024-05-13 17:23:46
  */
 
 /* Include Files */
@@ -25,17 +25,17 @@ static const mxArray *c_emlrtMexFcnResolvedFunctionsI(void)
 {
   const mxArray *nameCaptureInfo;
   const char_T *data[4] = {
-      "789cc5934f4ac34018c527528b9b6a367a0ce9da654b14a5b1c156901a1943f2950ecd64"
-      "c26422f110e2d2851770259e47f0061ec23669fed2219560fd365f1e"
-      "3f26efe58541cab9ae2084f65132513bd99d9556577b0795a7ca15c94e6717b54ae752fe"
-      "bcda36f3044422119e45213be9304a3ccb13e3471f108780b90fe0c4",
-      "644a5c18130aa3a2b85c2a7a5a409958a2e5737f06f67c1452c467419ed02d8aac8f0fc9"
-      "f7b636ece342d2875ae1b7da9d7662f69903a68040e0c0e6c41726b5"
-      "f81c385e34c3898d1780504b80698c86783d3aa6e5fc51c3fc8735f9536e33ea8702f094"
-      "080c9c338efd801572dc37ccd196e648482078688bdcefada19f26f5",
-      "2bf3dffdb7b52dc5bfacaea7830d73cbee5f07edc5fbfde53346dbf27bfa7efddaa65f3a"
-      "ffe5d7f4be1d49fcd40a1ff8fa60721345675d6f72ed76f5ab21ef19"
-      "bd3c8751e353970349f45fbfff07bf9780e6",
+      "789cc5935d4ec2401485a706d1179417f5cd25b800df4c5309a2422c51a335632d973081"
+      "e934335353d884ab30f1d12db80d5723f487fe8449318d785f6e4fbe"
+      "4ccfe9690669ed2b0d21b487a209ead16ec4ba19ef2d949f22d7143b996d54cb9d4bf85b"
+      "bc1de64a0864245c9bc2f2e48051e2daaeec4f3d401c049bbcc22024",
+      "4332813ea16066c5f542d1f30c5a8a055a3ceb2370c6a64f111f8934e1242b967d7c2abe"
+      "b7b6661f178a3e9a05fe683c19a796ce06604910120b87134f5ad4e6"
+      "63e078de0c270e9e03426d0956cfece2d5e884e6f30715f31f94e44fb8c3a8e74bc04322"
+      "3170ce38f604cbe478ae98a3aecc111121b9efc8d4efa3a29fa1f4cb",
+      "f3dffdb7952d85bfacaca7fd3573abee5f03ed86fbe8fd3b449bf2fb829de34dfa25f35f"
+      "7e55efdba1c2af59e0f6fde5d94db7753b7bd13b33bd23865efbe1ae"
+      "95e6e895f894e5400afdd7efff01da907edc",
       ""};
   nameCaptureInfo = NULL;
   emlrtNameCaptureMxArrayR2016a(&data[0], 1680U, &nameCaptureInfo);
@@ -77,7 +77,7 @@ mxArray *emlrtMexFcnProperties(void)
                 emlrtMxCreateString("E:\\Code\\test_script\\marker_extric_"
                                     "estimate\\PSO_marker_extric_estimate.m"));
   emlrtSetField(xEntryPoints, 0, "TimeStamp",
-                emlrtMxCreateDoubleScalar(739368.66618055559));
+                emlrtMxCreateDoubleScalar(739385.46129629633));
   emlrtSetField(xEntryPoints, 0, "Constructor",
                 emlrtMxCreateLogicalScalar(false));
   emlrtSetField(xEntryPoints, 0, "Visible", emlrtMxCreateLogicalScalar(true));
@@ -88,7 +88,7 @@ mxArray *emlrtMexFcnProperties(void)
   emlrtSetField(xResult, 0, "ResolvedFunctions",
                 (mxArray *)c_emlrtMexFcnResolvedFunctionsI());
   emlrtSetField(xResult, 0, "Checksum",
-                emlrtMxCreateString("jzmem4zMXFgFKXV5dpQNZF"));
+                emlrtMxCreateString("NwXw51XNIjZUsqNEzX2f5C"));
   emlrtSetField(xResult, 0, "EntryPoints", xEntryPoints);
   return xResult;
 }

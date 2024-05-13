@@ -5,7 +5,7 @@
  * File: compute_fit_error_pso.c
  *
  * MATLAB Coder version            : 24.1
- * C/C++ source code generated on  : 2024-04-29 11:40:58
+ * C/C++ source code generated on  : 2024-05-13 17:23:46
  */
 
 /* Include Files */
@@ -13,11 +13,8 @@
 #include "PSO_marker_extric_estimate_emxutil.h"
 #include "PSO_marker_extric_estimate_types.h"
 #include "rt_nonfinite.h"
-#include <emmintrin.h>
+#include "rt_nonfinite.h"
 #include <math.h>
-#include <xmmintrin.h>
-
-#define M_PI 3.14159265358979323846
 
 /* Function Declarations */
 static void binary_expand_op(emxArray_real_T *in1, const emxArray_real_T *in2,
@@ -147,21 +144,13 @@ double compute_fit_error_pso(const double params[2],
                               1.2246467991473532E-16,
                               -7.498798913309288E-33,
                               -1.0};
-  __m128 r;
-  __m128d r1;
   emxArray_real32_T *b_marker_xyz_imu;
   emxArray_real32_T *marker_xyz_imu;
   emxArray_real_T *marker_xyz_ned;
   emxArray_real_T *x;
   emxArray_real_T *xv;
-  double a[9];
-  double R_c2b0[3][3];
-  double R_c2b_compens[3][3];
+  double R_c2b_comp[9];
   double eulerCompens_xyz[3];
-  double markerxyz_imu[3];
-  double markerxyz_ned[3];
-  double markerxyz_imu_list[fit_data_marker_location->size[0]][3];
-  double markerxyz_ned_list[fit_data_marker_location->size[0]][3];
   const double *fit_data_R_b2e_data;
   const double *fit_data_pe_data;
   double ct_idx_0;
@@ -172,7 +161,7 @@ double compute_fit_error_pso(const double params[2],
   double t;
   double *marker_xyz_ned_data;
   double *xv_data;
-  float b_a[9];
+  float b_R_c2b_comp[9];
   const float *fit_data_marker_location_data;
   float *b_marker_xyz_imu_data;
   float *marker_xyz_imu_data;
@@ -189,166 +178,102 @@ double compute_fit_error_pso(const double params[2],
   fit_data_R_b2e_data = fit_data_R_b2e->data;
   fit_data_marker_location_data = fit_data_marker_location->data;
   fit_data_pe_data = fit_data_pe->data;
-
+  /*  单位：deg */
   /*  计算当前roll、pitch值的marker location测量值 */
-  double roll_init = M_PI;    // 绕 X 轴的旋转角度    --PH5
-  double pitch_init = 0;      // 绕 Y 轴的旋转角度
-  double yaw_init = M_PI / 2; // 绕 Z 轴的旋转角度
-  double eulerAngles0[3] = {roll_init, pitch_init, yaw_init};
-  euler2rotm(eulerAngles0, R_c2b0);
-  R_c2b0[0][0] = 0;
-  R_c2b0[0][1] = 1;
-  R_c2b0[0][2] = 0;
-
-  R_c2b0[1][0] = 1;
-  R_c2b0[1][1] = 0;
-  R_c2b0[1][2] = 0;
-
-  R_c2b0[2][0] = 0;
-  R_c2b0[2][1] = 0;
-  R_c2b0[2][2] = -1;
-
-  // debug
-  // printf("STEP7:R_c2b0[0][0]= %f, [0][1]= %f, [0][2]= %f\n",
-  // R_c2b0[0][0],R_c2b0[0][1], R_c2b0[0][2]); printf("STEP7:R_c2b0[1][0]= %f,
-  // [1][1]= %f, [1][2]= %f\n", R_c2b0[1][0], R_c2b0[1][1], R_c2b0[1][2]);
-  // printf("STEP7:R_c2b0[2][0]= %f, [2][1]= %f, [2][2]= %f\n", R_c2b0[2][0],
-  // R_c2b0[2][1], R_c2b0[2][2]);
-
+  /*  绕 X 轴的旋转角度    --PH5 */
+  /*  绕 Y 轴的旋转角度 */
+  /*  绕 Z 轴的旋转角度 */
   /*  组合欧拉角向量 */
-  eulerCompens_xyz[0] = params[0] / 57.3; // [roll, pitch, yaw]
-  eulerCompens_xyz[1] = params[1] / 57.3; /*  单位：deg to rad */
-  eulerCompens_xyz[2] = 0;
-  euler2rotm(eulerCompens_xyz, R_c2b_compens);
-
-  // debug
-  // printf("STEP6:params[0]= %f, params[1]= %f\n", params[0], params[1]);
-
-  // printf("STEP7:R_c2b_compens[0][0]= %f, [0][1]= %f, [0][2]= %f\n",
-  //        R_c2b_compens[0][0], R_c2b_compens[0][1], R_c2b_compens[0][2]);
-  // printf("STEP7:R_c2b_compens[1][0]= %f, [1][1]= %f, [1][2]= %f\n",
-  //        R_c2b_compens[1][0], R_c2b_compens[1][1], R_c2b_compens[1][2]);
-  // printf("STEP7:R_c2b_compens[2][0]= %f, [2][1]= %f, [2][2]= %f\n",
-  //        R_c2b_compens[2][0], R_c2b_compens[2][1], R_c2b_compens[2][2]);
-  
-  double t_c2b[3] = {-0.108, 0.033, 0.038}; // --PH5
-
-  // fit_data_marker_location_data
-  for (int i = 0; i < fit_data_marker_location->size[0]; i++) {
-    markerxyz_imu[0] =
-        R_c2b_compens[0][1] * fit_data_marker_location_data[i * 3 + 0] +
-        R_c2b_compens[0][0] * fit_data_marker_location_data[i * 3 + 1] -
-        R_c2b_compens[0][2] * fit_data_marker_location_data[i * 3 + 2] +
-        t_c2b[1];
-    markerxyz_imu[1] =
-        R_c2b_compens[1][1] * fit_data_marker_location_data[i * 3 + 0] +
-        R_c2b_compens[1][0] * fit_data_marker_location_data[i * 3 + 1] -
-        R_c2b_compens[1][2] * fit_data_marker_location_data[i * 3 + 2] +
-        t_c2b[2];
-    markerxyz_imu[2] =
-        R_c2b_compens[2][1] * fit_data_marker_location_data[i * 3 + 0] +
-        R_c2b_compens[2][0] * fit_data_marker_location_data[i * 3 + 1] -
-        R_c2b_compens[2][2] * fit_data_marker_location_data[i * 3 + 2] +
-        t_c2b[3];
-    for (int j = 0; j < 3; j++) {
-      markerxyz_imu_list[i][j] = markerxyz_imu[j];
-    }
-    // debug
-    // printf("STEP7:markerxyz_imu_list[%d][:]: [%f,%f,%f]\n", i,
-    //  markerxyz_imu_list[i][0], markerxyz_imu_list[i][1],
-    //  markerxyz_imu_list[i][2]);
-  }
-
+  eulerCompens_xyz[0] = params[0] / 57.3;
+  eulerCompens_xyz[1] = params[1] / 57.3;
   /*  将欧拉角转换为旋转矩阵 */
+  /* --PH5 */
+  /*  替换掉eul2rotm */
   ct_idx_0 = cos(eulerCompens_xyz[0]);
   eulerCompens_xyz[0] = sin(eulerCompens_xyz[0]);
   ct_idx_1 = cos(eulerCompens_xyz[1]);
   eulerCompens_xyz[1] = sin(eulerCompens_xyz[1]);
-  a[0] = ct_idx_1;
-  a[3] = -ct_idx_1 * 0.0;
-  a[6] = eulerCompens_xyz[1];
+  R_c2b_comp[0] = ct_idx_1;
+  R_c2b_comp[3] = -ct_idx_1 * 0.0;
+  R_c2b_comp[6] = eulerCompens_xyz[1];
   t = eulerCompens_xyz[0] * eulerCompens_xyz[1];
-  a[1] = ct_idx_0 * 0.0 + t;
-  a[4] = ct_idx_0 - t * 0.0;
-  a[7] = -ct_idx_1 * eulerCompens_xyz[0];
+  R_c2b_comp[1] = ct_idx_0 * 0.0 + t;
+  R_c2b_comp[4] = ct_idx_0 - t * 0.0;
+  R_c2b_comp[7] = -ct_idx_1 * eulerCompens_xyz[0];
   t = ct_idx_0 * eulerCompens_xyz[1];
-  a[2] = eulerCompens_xyz[0] * 0.0 - t;
-  a[5] = eulerCompens_xyz[0] + t * 0.0;
-  a[8] = ct_idx_0 * ct_idx_1;
-  for (hi = 0; hi < 3; hi++) {
-    d = a[hi];
-    ct_idx_0 = a[hi + 3];
-    ct_idx_1 = a[hi + 6];
-    for (xblockoffset = 0; xblockoffset < 3; xblockoffset++) {
-      b_a[hi + 3 * xblockoffset] =
-          (float)((d * b[3 * xblockoffset] +
-                   ct_idx_0 * b[3 * xblockoffset + 1]) +
-                  ct_idx_1 * b[3 * xblockoffset + 2]);
+  R_c2b_comp[2] = eulerCompens_xyz[0] * 0.0 - t;
+  R_c2b_comp[5] = eulerCompens_xyz[0] + t * 0.0;
+  R_c2b_comp[8] = ct_idx_0 * ct_idx_1;
+  /*  R_c2b0 = [0 1 0; 1 0 0; 0 0 -1]; */
+  /*  x = eulerCompens_xyz(1); */
+  /*  y = eulerCompens_xyz(2); */
+  /*  z = 0; */
+  /*  Rx = [1 0 0; 0 cos(x) -sin(x); 0 sin(x) cos(x)]; */
+  /*  Ry = [cos(y) 0 sin(y); 0 1 0; -sin(y) 0 cos(y)]; */
+  /*  Rz = [cos(z) -sin(z) 0; sin(z) cos(z) 0; 0 0 1]; */
+  /*  R_c2b_comp = Rz*Ry*Rx; */
+  for (lastBlockLength = 0; lastBlockLength < 3; lastBlockLength++) {
+    d = R_c2b_comp[lastBlockLength];
+    ct_idx_0 = R_c2b_comp[lastBlockLength + 3];
+    ct_idx_1 = R_c2b_comp[lastBlockLength + 6];
+    for (nblocks = 0; nblocks < 3; nblocks++) {
+      b_R_c2b_comp[lastBlockLength + 3 * nblocks] =
+          (float)((d * b[3 * nblocks] + ct_idx_0 * b[3 * nblocks + 1]) +
+                  ct_idx_1 * b[3 * nblocks + 2]);
     }
   }
   emxInit_real32_T(&marker_xyz_imu, 2);
-  lastBlockLength = fit_data_marker_location->size[0];
-  hi = marker_xyz_imu->size[0] * marker_xyz_imu->size[1];
+  firstBlockLength = fit_data_marker_location->size[0];
+  lastBlockLength = marker_xyz_imu->size[0] * marker_xyz_imu->size[1];
   marker_xyz_imu->size[0] = fit_data_marker_location->size[0];
   marker_xyz_imu->size[1] = 3;
-  emxEnsureCapacity_real32_T(marker_xyz_imu, hi);
+  emxEnsureCapacity_real32_T(marker_xyz_imu, lastBlockLength);
   marker_xyz_imu_data = marker_xyz_imu->data;
-  for (hi = 0; hi < lastBlockLength; hi++) {
-    for (xblockoffset = 0; xblockoffset < 3; xblockoffset++) {
-      marker_xyz_imu_data[hi + marker_xyz_imu->size[0] * xblockoffset] =
-          (b_a[xblockoffset] * fit_data_marker_location_data[hi] +
-           b_a[xblockoffset + 3] *
-               fit_data_marker_location_data[hi + fit_data_marker_location
-                                                      ->size[0]]) +
-          b_a[xblockoffset + 6] *
-              fit_data_marker_location_data[hi +
+  for (lastBlockLength = 0; lastBlockLength < firstBlockLength;
+       lastBlockLength++) {
+    for (nblocks = 0; nblocks < 3; nblocks++) {
+      marker_xyz_imu_data[lastBlockLength + marker_xyz_imu->size[0] * nblocks] =
+          (b_R_c2b_comp[nblocks] *
+               fit_data_marker_location_data[lastBlockLength] +
+           b_R_c2b_comp[nblocks + 3] *
+               fit_data_marker_location_data
+                   [lastBlockLength + fit_data_marker_location->size[0]]) +
+          b_R_c2b_comp[nblocks + 6] *
+              fit_data_marker_location_data[lastBlockLength +
                                             fit_data_marker_location->size[0] *
                                                 2];
     }
   }
   xpageoffset = marker_xyz_imu->size[0] - 1;
   emxInit_real32_T(&b_marker_xyz_imu, 2);
-  hi = b_marker_xyz_imu->size[0] * b_marker_xyz_imu->size[1];
+  lastBlockLength = b_marker_xyz_imu->size[0] * b_marker_xyz_imu->size[1];
   b_marker_xyz_imu->size[0] = fit_data_marker_location->size[0];
   b_marker_xyz_imu->size[1] = 3;
-  emxEnsureCapacity_real32_T(b_marker_xyz_imu, hi);
+  emxEnsureCapacity_real32_T(b_marker_xyz_imu, lastBlockLength);
   b_marker_xyz_imu_data = b_marker_xyz_imu->data;
-  firstBlockLength = (marker_xyz_imu->size[0] / 4) << 2;
-  nblocks = firstBlockLength - 4;
-  for (hi = 0; hi <= nblocks; hi += 4) {
-    r = _mm_loadu_ps(&marker_xyz_imu_data[hi]);
-    _mm_storeu_ps(&b_marker_xyz_imu_data[hi],
-                  _mm_sub_ps(r, _mm_set1_ps(0.108F)));
+  for (lastBlockLength = 0; lastBlockLength < firstBlockLength;
+       lastBlockLength++) {
+    b_marker_xyz_imu_data[lastBlockLength] =
+        marker_xyz_imu_data[lastBlockLength] - 0.108F;
   }
-  for (hi = firstBlockLength; hi < lastBlockLength; hi++) {
-    b_marker_xyz_imu_data[hi] = marker_xyz_imu_data[hi] - 0.108F;
+  for (lastBlockLength = 0; lastBlockLength <= xpageoffset; lastBlockLength++) {
+    b_marker_xyz_imu_data[lastBlockLength + b_marker_xyz_imu->size[0]] =
+        marker_xyz_imu_data[lastBlockLength + marker_xyz_imu->size[0]] + 0.033F;
   }
-  for (hi = 0; hi <= nblocks; hi += 4) {
-    r = _mm_loadu_ps(&marker_xyz_imu_data[hi + marker_xyz_imu->size[0]]);
-    _mm_storeu_ps(&b_marker_xyz_imu_data[hi + b_marker_xyz_imu->size[0]],
-                  _mm_add_ps(r, _mm_set1_ps(0.033F)));
+  for (lastBlockLength = 0; lastBlockLength <= xpageoffset; lastBlockLength++) {
+    b_marker_xyz_imu_data[lastBlockLength + b_marker_xyz_imu->size[0] * 2] =
+        marker_xyz_imu_data[lastBlockLength + marker_xyz_imu->size[0] * 2] +
+        0.038F;
   }
-  for (hi = firstBlockLength; hi <= xpageoffset; hi++) {
-    b_marker_xyz_imu_data[hi + b_marker_xyz_imu->size[0]] =
-        marker_xyz_imu_data[hi + marker_xyz_imu->size[0]] + 0.033F;
-  }
-  for (hi = 0; hi <= nblocks; hi += 4) {
-    r = _mm_loadu_ps(&marker_xyz_imu_data[hi + marker_xyz_imu->size[0] * 2]);
-    _mm_storeu_ps(&b_marker_xyz_imu_data[hi + b_marker_xyz_imu->size[0] * 2],
-                  _mm_add_ps(r, _mm_set1_ps(0.038F)));
-  }
-  for (hi = firstBlockLength; hi <= xpageoffset; hi++) {
-    b_marker_xyz_imu_data[hi + b_marker_xyz_imu->size[0] * 2] =
-        marker_xyz_imu_data[hi + marker_xyz_imu->size[0] * 2] + 0.038F;
-  }
-  hi = marker_xyz_imu->size[0] * marker_xyz_imu->size[1];
-  marker_xyz_imu->size[0] = b_marker_xyz_imu->size[0];
+  lastBlockLength = marker_xyz_imu->size[0] * marker_xyz_imu->size[1];
+  marker_xyz_imu->size[0] = fit_data_marker_location->size[0];
   marker_xyz_imu->size[1] = 3;
-  emxEnsureCapacity_real32_T(marker_xyz_imu, hi);
+  emxEnsureCapacity_real32_T(marker_xyz_imu, lastBlockLength);
   marker_xyz_imu_data = marker_xyz_imu->data;
   xpageoffset = b_marker_xyz_imu->size[0] * 3;
-  for (hi = 0; hi < xpageoffset; hi++) {
-    marker_xyz_imu_data[hi] = b_marker_xyz_imu_data[hi];
+  for (lastBlockLength = 0; lastBlockLength < xpageoffset; lastBlockLength++) {
+    marker_xyz_imu_data[lastBlockLength] =
+        b_marker_xyz_imu_data[lastBlockLength];
   }
   emxFree_real32_T(&b_marker_xyz_imu);
   /*  1：imu系相对于ned的旋转矩阵R_b2e:
@@ -356,140 +281,38 @@ double compute_fit_error_pso(const double params[2],
   /*  2：marker_xyz 由vio坐标系c旋转到与imu坐标系b，再转到与ned原点坐标系e对齐
    */
   emxInit_real_T(&marker_xyz_ned, 2);
-  hi = marker_xyz_ned->size[0] * marker_xyz_ned->size[1];
+  lastBlockLength = marker_xyz_ned->size[0] * marker_xyz_ned->size[1];
   marker_xyz_ned->size[0] = fit_data_marker_location->size[0];
   marker_xyz_ned->size[1] = 3;
-  emxEnsureCapacity_real_T(marker_xyz_ned, hi);
+  emxEnsureCapacity_real_T(marker_xyz_ned, lastBlockLength);
   marker_xyz_ned_data = marker_xyz_ned->data;
-  for (xpageoffset = 0; xpageoffset < lastBlockLength; xpageoffset++) {
-    for (hi = 0; hi < 3; hi++) {
-      xblockoffset = hi + 9 * xpageoffset;
-      marker_xyz_ned_data[xpageoffset + marker_xyz_ned->size[0] * hi] =
-          ((float)fit_data_R_b2e_data[xblockoffset] *
+  for (xpageoffset = 0; xpageoffset < firstBlockLength; xpageoffset++) {
+    for (lastBlockLength = 0; lastBlockLength < 3; lastBlockLength++) {
+      nblocks = lastBlockLength + 9 * xpageoffset;
+      marker_xyz_ned_data[xpageoffset +
+                          marker_xyz_ned->size[0] * lastBlockLength] =
+          ((float)fit_data_R_b2e_data[nblocks] *
                marker_xyz_imu_data[xpageoffset] +
-           (float)fit_data_R_b2e_data[xblockoffset + 3] *
+           (float)fit_data_R_b2e_data[nblocks + 3] *
                marker_xyz_imu_data[xpageoffset + marker_xyz_imu->size[0]]) +
-          (float)fit_data_R_b2e_data[xblockoffset + 6] *
+          (float)fit_data_R_b2e_data[nblocks + 6] *
               marker_xyz_imu_data[xpageoffset + marker_xyz_imu->size[0] * 2];
     }
   }
-  //
-  for (int i = 0; i < fit_data_marker_location->size[0]; i++) {
-    double markerxyz_imu_tmp[3];
-    markerxyz_imu_tmp[0] = markerxyz_imu_list[i][0];
-    markerxyz_imu_tmp[1] = markerxyz_imu_list[i][1];
-    markerxyz_imu_tmp[2] = markerxyz_imu_list[i][2];
-
-    markerxyz_ned[0] =
-        fit_data_R_b2e_data[i * 9 + 0 * 3 + 0] * markerxyz_imu_tmp[0] +
-        fit_data_R_b2e_data[i * 9 + 0 * 3 + 1] * markerxyz_imu_tmp[1] +
-        fit_data_R_b2e_data[i * 9 + 0 * 3 + 2] * markerxyz_imu_tmp[2];
-    markerxyz_ned[1] =
-        fit_data_R_b2e_data[i * 9 + 1 * 3 + 0] * markerxyz_imu_tmp[0] +
-        fit_data_R_b2e_data[i * 9 + 1 * 3 + 1] * markerxyz_imu_tmp[1] +
-        fit_data_R_b2e_data[i * 9 + 1 * 3 + 2] * markerxyz_imu_tmp[2];
-    markerxyz_ned[2] =
-        fit_data_R_b2e_data[i * 9 + 2 * 3 + 0] * markerxyz_imu_tmp[0] +
-        fit_data_R_b2e_data[i * 9 + 2 * 3 + 1] * markerxyz_imu_tmp[1] +
-        fit_data_R_b2e_data[i * 9 + 2 * 3 + 2] * markerxyz_imu_tmp[2];
-    for (int j = 0; j < 3; j++) {
-      markerxyz_ned_list[i][j] = markerxyz_ned[j];
-    }
-    // debug
-    // printf("STEP7:markerxyz_ned_list[%d][:]: [%f,%f,%f]\n", i,
-    //  markerxyz_ned_list[i][0], markerxyz_ned_list[i][1],
-    //  markerxyz_ned_list[i][2]);
-  }
-  /*  计算拟合误差和 */
-  double mean_fit_error[3];
-  double fit_error_trans[fit_data_pe->size[0]][2]; // 取xy二维误差
-  mean_fit_error[0] = 0.0;
-  mean_fit_error[1] = 0.0;
-  mean_fit_error[2] = 0.0;
-  fit_error = 0.0;
-
-  if (fit_data_pe->size[0] == fit_data_marker_location->size[0]) {
-    for (int i = 0; i < fit_data_pe->size[0] * fit_data_pe->size[1]; i++) {
-      int idx0 = i / 3; // 商
-      int idx1 = i % 3; // 余数
-      mean_fit_error[idx1] +=
-          (fit_data_pe->data[i] - markerxyz_ned_list[idx0][idx1]);
-
-      // debug
-      // printf("STEP8: fit_data_pe->data[%d]= %f, markerxyz_ned_list[%d][%d] =
-      // %f \n", i, fit_data_pe->data[i], idx0, idx1,
-      // markerxyz_ned_list[idx0][idx1]);
-    }
-    mean_fit_error[0] /= fit_data_pe->size[0];
-    mean_fit_error[1] /= fit_data_pe->size[0];
-    mean_fit_error[2] /= fit_data_pe->size[0];
-
-    // debug
-    //  printf("STEP9: mean_fit_error:[%f,%f,%f]\n",
-    //  mean_fit_error[0],mean_fit_error[1],mean_fit_error[2]);
-
-    for (size_t i = 0; i < fit_data_pe->size[0] * fit_data_pe->size[1]; i++) {
-      int idx0 = i / 3; // 商
-      int idx1 = i % 3; // 余数
-      if (idx1 == 2) {  // 剔除第3维数据
-        continue;
-      } else {
-        fit_error_trans[idx0][idx1] =
-            fit_data_pe->data[i] -
-            (markerxyz_ned_list[idx0][idx1] + mean_fit_error[idx1]);
-        // debug
-        // printf("STEP10: fit_error_trans[%d][%d]: %f,%f \n", idx0, idx1,
-        // fit_error_trans[idx0][0], fit_error_trans[idx0][1]); fit_error +=
-        // sqrt(fit_error_trans[idx0][0] * fit_error_trans[idx0][0] +
-        //                       fit_error_trans[idx0][1] *
-        //                       fit_error_trans[idx0][1]);
-      }
-    }
-    // 计算fit_error_trans各列std
-    double std_dev[2];
-    double fit_error_std_mod = 0.0;
-
-    for (int j = 0; j < 2; j++) {
-      double list_sum = 0;
-      for (int i = 0; i < fit_data_pe->size[0]; i++) { // 列和
-        list_sum += fit_error_trans[i][j];
-      }
-      double list_mean = list_sum / fit_data_pe->size[0]; // 列均值
-      double squar_diff_sum = 0.0;
-      for (int i = 0; i < fit_data_pe->size[0]; i++) {
-        double list_diff = fit_error_trans[i][j] - list_mean;
-        squar_diff_sum += list_diff * list_diff; // 列方差
-      }
-      std_dev[j] = sqrt(squar_diff_sum / fit_data_pe->size[0]); // 列标准差
-      fit_error_std_mod += std_dev[j] * std_dev[j];
-    }
-    fit_error_std_mod = sqrt(fit_error_std_mod); // 标准差模值
-    fit_error = fit_error_std_mod;
-
-    // debug
-    // printf("STEP10: std_dev: [%f,%f]\n", std_dev[0], std_dev[1]);
-    // printf("STEP11: fit_error_std_mod [%f]\n", fit_error_std_mod);
-  }
-  return fit_error;
   emxFree_real32_T(&marker_xyz_imu);
   /*  计算拟合误差和 */
   emxInit_real_T(&x, 2);
   if (fit_data_pe->size[0] == marker_xyz_ned->size[0]) {
-    hi = x->size[0] * x->size[1];
+    lastBlockLength = x->size[0] * x->size[1];
     x->size[0] = fit_data_pe->size[0];
     x->size[1] = 3;
-    emxEnsureCapacity_real_T(x, hi);
+    emxEnsureCapacity_real_T(x, lastBlockLength);
     xv_data = x->data;
-    lastBlockLength = fit_data_pe->size[0] * 3;
-    xpageoffset = (lastBlockLength / 2) << 1;
-    firstBlockLength = xpageoffset - 2;
-    for (hi = 0; hi <= firstBlockLength; hi += 2) {
-      r1 = _mm_loadu_pd(&marker_xyz_ned_data[hi]);
-      _mm_storeu_pd(&xv_data[hi],
-                    _mm_sub_pd(_mm_loadu_pd(&fit_data_pe_data[hi]), r1));
-    }
-    for (hi = xpageoffset; hi < lastBlockLength; hi++) {
-      xv_data[hi] = fit_data_pe_data[hi] - marker_xyz_ned_data[hi];
+    firstBlockLength = fit_data_pe->size[0] * 3;
+    for (lastBlockLength = 0; lastBlockLength < firstBlockLength;
+         lastBlockLength++) {
+      xv_data[lastBlockLength] = fit_data_pe_data[lastBlockLength] -
+                                 marker_xyz_ned_data[lastBlockLength];
     }
   } else {
     minus(x, fit_data_pe, marker_xyz_ned);
@@ -536,44 +359,31 @@ double compute_fit_error_pso(const double params[2],
     }
   }
   if (fit_data_pe->size[0] == marker_xyz_ned->size[0]) {
-    nblocks = x->size[0];
-    lastBlockLength = fit_data_pe->size[0];
-    hi = x->size[0] * x->size[1];
+    xpageoffset = x->size[0];
+    firstBlockLength = fit_data_pe->size[0];
+    lastBlockLength = x->size[0] * x->size[1];
     x->size[0] = fit_data_pe->size[0];
     x->size[1] = 3;
-    emxEnsureCapacity_real_T(x, hi);
+    emxEnsureCapacity_real_T(x, lastBlockLength);
     xv_data = x->data;
-    xpageoffset = (lastBlockLength / 2) << 1;
-    firstBlockLength = xpageoffset - 2;
-    for (hi = 0; hi < 3; hi++) {
-      for (xblockoffset = 0; xblockoffset <= firstBlockLength;
-           xblockoffset += 2) {
-        r1 = _mm_loadu_pd(
-            &marker_xyz_ned_data[xblockoffset + marker_xyz_ned->size[0] * hi]);
-        _mm_storeu_pd(
-            &xv_data[xblockoffset + x->size[0] * hi],
-            _mm_sub_pd(
-                _mm_loadu_pd(&fit_data_pe_data[xblockoffset +
-                                               fit_data_pe->size[0] * hi]),
-                _mm_add_pd(
-                    r1, _mm_set1_pd(eulerCompens_xyz[hi] / (double)nblocks))));
-      }
-      for (xblockoffset = xpageoffset; xblockoffset < lastBlockLength;
-           xblockoffset++) {
-        xv_data[xblockoffset + x->size[0] * hi] =
-            fit_data_pe_data[xblockoffset + fit_data_pe->size[0] * hi] -
-            (marker_xyz_ned_data[xblockoffset + marker_xyz_ned->size[0] * hi] +
-             eulerCompens_xyz[hi] / (double)nblocks);
+    for (lastBlockLength = 0; lastBlockLength < 3; lastBlockLength++) {
+      for (nblocks = 0; nblocks < firstBlockLength; nblocks++) {
+        xv_data[nblocks + x->size[0] * lastBlockLength] =
+            fit_data_pe_data[nblocks + fit_data_pe->size[0] * lastBlockLength] -
+            (marker_xyz_ned_data[nblocks +
+                                 marker_xyz_ned->size[0] * lastBlockLength] +
+             eulerCompens_xyz[lastBlockLength] / (double)xpageoffset);
       }
     }
-    hi = marker_xyz_ned->size[0] * marker_xyz_ned->size[1];
-    marker_xyz_ned->size[0] = x->size[0];
+    lastBlockLength = marker_xyz_ned->size[0] * marker_xyz_ned->size[1];
+    marker_xyz_ned->size[0] = fit_data_pe->size[0];
     marker_xyz_ned->size[1] = 3;
-    emxEnsureCapacity_real_T(marker_xyz_ned, hi);
+    emxEnsureCapacity_real_T(marker_xyz_ned, lastBlockLength);
     marker_xyz_ned_data = marker_xyz_ned->data;
-    lastBlockLength = x->size[0] * 3;
-    for (hi = 0; hi < lastBlockLength; hi++) {
-      marker_xyz_ned_data[hi] = xv_data[hi];
+    firstBlockLength = x->size[0] * 3;
+    for (lastBlockLength = 0; lastBlockLength < firstBlockLength;
+         lastBlockLength++) {
+      marker_xyz_ned_data[lastBlockLength] = xv_data[lastBlockLength];
     }
   } else {
     binary_expand_op(marker_xyz_ned, fit_data_pe, eulerCompens_xyz, x);
@@ -586,15 +396,16 @@ double compute_fit_error_pso(const double params[2],
   emxInit_real_T(&xv, 1);
   for (p = 0; p < 2; p++) {
     xpageoffset = p * xi;
-    hi = xv->size[0];
+    lastBlockLength = xv->size[0];
     xv->size[0] = xi;
-    emxEnsureCapacity_real_T(xv, hi);
+    emxEnsureCapacity_real_T(xv, lastBlockLength);
     xv_data = xv->data;
     for (k = 0; k < xi; k++) {
-      hi = xpageoffset + k;
-      xv_data[k] = marker_xyz_ned_data[hi % marker_xyz_ned->size[0] +
-                                       marker_xyz_ned->size[0] *
-                                           (hi / marker_xyz_ned->size[0])];
+      lastBlockLength = xpageoffset + k;
+      xv_data[k] =
+          marker_xyz_ned_data[lastBlockLength % marker_xyz_ned->size[0] +
+                              marker_xyz_ned->size[0] *
+                                  (lastBlockLength / marker_xyz_ned->size[0])];
     }
     if (marker_xyz_ned->size[0] == 0) {
       d = rtNaN;
@@ -676,32 +487,6 @@ double compute_fit_error_pso(const double params[2],
    * ','res:',num2str(fit_error))); */
 }
 
-// 按ZYX顺序，欧拉角转为旋转矩阵
-void euler2rotm(double eulerAngles[3], double R[3][3])
-{
-  double a = eulerAngles[0];
-  double b = eulerAngles[1];
-  double c = eulerAngles[2];
-
-  double cos_a = cos(a);
-  double sin_a = sin(a);
-  double cos_b = cos(b);
-  double sin_b = sin(b);
-  double cos_c = cos(c);
-  double sin_c = sin(c);
-
-  R[0][0] = cos_b * cos_c;
-  R[0][1] = -cos_b * sin_c;
-  R[0][2] = sin_b;
-
-  R[1][0] = sin_a * sin_b * cos_c + cos_a * sin_c;
-  R[1][1] = -sin_a * sin_b * sin_c + cos_a * cos_c;
-  R[1][2] = -sin_a * cos_b;
-
-  R[2][0] = -cos_a * sin_b * cos_c + sin_a * sin_c;
-  R[2][1] = cos_a * sin_b * sin_c + sin_a * cos_c;
-  R[2][2] = cos_a * cos_b;
-}
 /*
  * File trailer for compute_fit_error_pso.c
  *
